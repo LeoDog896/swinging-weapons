@@ -16,6 +16,18 @@ interface Vector {
   y: number;
 }
 
+function vec(x: number, y?: number): Vector {
+  return { x, y: y ?? x };
+}
+
+function mul(a: Vector, b: Vector): Vector {
+  return { x: a.x * b.x, y: a.y * b.y };
+}
+
+function add(a: Vector, b: Vector): Vector {
+  return { x: a.x + b.x, y: a.y + b.y };
+}
+
 const imageOffset = { x: -300, y: -15 };
 let mousePosition: Vector | null = null;
 let velocity: Vector = { x: 0, y: 0 };
@@ -32,19 +44,16 @@ canvas.addEventListener("mousemove", (event) => {
 });
 
 function draw() {
-  velocity.x += acceleration.x;
-  velocity.y += acceleration.y;
+  velocity = add(velocity, acceleration);
 
   // air resistance
-  velocity.x *= 0.9;
-  velocity.y *= 0.9;
+  velocity = mul(velocity, vec(0.9));
 
   // calculate angular velocity from the velocity vector
   angularVelocity = (velocity.x + velocity.y) * 0.003;
 
-  // dampen velocity (air resistance)
-  velocity.x *= 0.9;
-  velocity.y *= 0.9;
+  // dampen acceleration (air resistance)
+  acceleration = mul(acceleration, vec(0.9));
 
   angle += angularVelocity;
 
@@ -67,7 +76,11 @@ function draw() {
       streakPosition.shift();
     }
 
-    context.strokeStyle = "gold";
+    context.strokeStyle = "gold"
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.shadowColor = "gold";
+    context.shadowBlur = 10;
 
     for (let i = 0; i < streakPosition.length; i++) {
       const position = streakPosition[i];
