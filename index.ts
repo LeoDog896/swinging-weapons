@@ -66,6 +66,9 @@ function draw() {
     if (streakPosition.length > 20) {
       streakPosition.shift();
     }
+
+    context.strokeStyle = "gold";
+
     for (let i = 0; i < streakPosition.length; i++) {
       const position = streakPosition[i];
 
