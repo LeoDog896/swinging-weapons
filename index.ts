@@ -1,4 +1,4 @@
-import sword from "./sword.png"
+import sword from "./sword.png";
 
 const canvas = document.querySelector<HTMLCanvasElement>("canvas")!;
 const context = canvas.getContext("2d")!;
@@ -8,84 +8,105 @@ let imageLoaded = false;
 const image = new Image();
 image.src = sword;
 image.onload = () => {
-    imageLoaded = true;
-}
+  imageLoaded = true;
+};
 
 interface Vector {
-    x: number;
-    y: number;
+  x: number;
+  y: number;
 }
 
 const imageOffset = { x: -300, y: -15 };
 let mousePosition: Vector | null = null;
 let velocity: Vector = { x: 0, y: 0 };
-let acceleration: Vector = { x: 0, y: 0}
+let acceleration: Vector = { x: 0, y: 0 };
 let angularVelocity = 0;
 let angle = 0;
+let streakPosition: Vector[] = [];
 
 canvas.addEventListener("mousemove", (event) => {
-    mousePosition = { x: event.clientX, y: event.clientY };
+  mousePosition = { x: event.clientX, y: event.clientY };
 
-    acceleration.x = event.movementX;
-    acceleration.y = event.movementY;
+  acceleration.x = event.movementX;
+  acceleration.y = event.movementY;
 });
 
 function draw() {
-    velocity.x += acceleration.x;
-    velocity.y += acceleration.y;
+  velocity.x += acceleration.x;
+  velocity.y += acceleration.y;
 
-    // air resistance
-    velocity.x *= 0.9;
-    velocity.y *= 0.9;
+  // air resistance
+  velocity.x *= 0.9;
+  velocity.y *= 0.9;
 
-    angularVelocity = (velocity.y - velocity.x) * 0.004;
+  // calculate angular velocity from the velocity vector
+  angularVelocity = (velocity.x + velocity.y) * 0.003;
 
-    // dampen angular velocity
-    angularVelocity *= 0.9;
+  // dampen velocity (air resistance)
+  velocity.x *= 0.9;
+  velocity.y *= 0.9;
 
-    // encourage downward rotation
-    angularVelocity += (Math.PI - (angle % Math.PI)) * 0.01;
-    
-    angle += angularVelocity;
+  angle += angularVelocity;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    if (imageLoaded && mousePosition) {
-        // Offset the image so that the center of the image is at the mouse position
-        context.save();
-        context.translate(mousePosition.x, mousePosition.y);
-        context.rotate(angle);
-        context.drawImage(image, imageOffset.x, imageOffset.y);
-        context.restore();
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw a streak of the tip of the sword
+  if (mousePosition) {
+    const endOfSword = {
+      x: 0,
+      y: 580,
+    };
+
+    // Matrix multiplication to rotate the end of the sword
+    streakPosition.push({
+      x: mousePosition.x + endOfSword.x * Math.cos(angle) - endOfSword.y * Math.sin(angle),
+      y: mousePosition.y + endOfSword.x * Math.sin(angle) + endOfSword.y * Math.cos(angle),
+    });
+
+    if (streakPosition.length > 20) {
+      streakPosition.shift();
+    }
+    for (let i = 0; i < streakPosition.length; i++) {
+      const position = streakPosition[i];
+
+      if (i === 0) {
+        continue;
+      }
+
+      const previousPosition = streakPosition[i - 1];
+
+      // progressively make the line thinner (this sometimes causes holes in the gaps between lines)
+      context.lineWidth = i;
+      context.beginPath();
+      context.moveTo(previousPosition.x, previousPosition.y);
+      context.lineTo(position.x, position.y);
+      context.stroke();
 
     }
+  }
 
-    if (mousePosition) {
-        // velocity line
-        context.beginPath();
-        context.moveTo(mousePosition.x, mousePosition.y);
-        context.lineTo(mousePosition.x + (acceleration.x * 5), mousePosition.y + (acceleration.y * 5));
-        context.stroke();
+  if (imageLoaded && mousePosition) {
+    // Offset the image so that the center of the image is at the mouse position
+    context.save();
+    context.translate(mousePosition.x, mousePosition.y);
+    context.rotate(angle);
+    context.drawImage(image, imageOffset.x, imageOffset.y);
+    context.restore();
+  }
 
-        // acceleration line
-        context.beginPath();
-        context.moveTo(mousePosition.x, mousePosition.y);
-        context.lineTo(mousePosition.x + (velocity.x * 5), mousePosition.y + (velocity.y * 5));
-        context.stroke();
-    }
-
-    requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 }
 
 draw();
 
 // Resize handles
 {
-    window.addEventListener("resize", () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        context.drawImage(image, 0, 0);
-    })
-
+  window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    context.drawImage(image, 0, 0);
+  });
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
