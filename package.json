@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build index.html --public-url ./",
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html --public-url ./",
     "format": "prettier --write ."
   },
   "dependencies": {
