@@ -1,5 +1,6 @@
 import sword from "./sword.png?width=300&height=300";
-import { Pane } from 'tweakpane';
+import { Pane } from "tweakpane";
+import { mul, add, vec, type Vector } from "./vec";
 
 const canvas = document.querySelector<HTMLCanvasElement>("canvas")!;
 const context = canvas.getContext("2d")!;
@@ -11,23 +12,6 @@ image.src = sword;
 image.onload = () => {
   imageLoaded = true;
 };
-
-interface Vector {
-  x: number;
-  y: number;
-}
-
-function vec(x: number, y?: number): Vector {
-  return { x, y: y ?? x };
-}
-
-function mul(a: Vector, b: Vector): Vector {
-  return { x: a.x * b.x, y: a.y * b.y };
-}
-
-function add(a: Vector, b: Vector): Vector {
-  return { x: a.x + b.x, y: a.y + b.y };
-}
 
 function type<T>(value: T): T {
   return value;
@@ -43,9 +27,11 @@ const params = {
   angularAcceleration: 0,
   angle: 0,
   streakPosition: type<Vector[]>([]),
-}
+};
 
-pane.addMonitor(params, "angularAcceleration", { label: "Angular Acceleration" });
+pane.addMonitor(params, "angularAcceleration", {
+  label: "Angular Acceleration",
+});
 pane.addMonitor(params, "angularVelocity", { label: "Angular Velocity" });
 pane.addMonitor(params, "angle", { label: "Angle" });
 
@@ -66,17 +52,20 @@ function draw() {
   // convert our mouse movement into angular velocity
 
   params.angularVelocity = (params.velocity.x + params.velocity.y) / 1000;
-  
 
   // we are applying gravity to the end of the sword, so we need to rotate the acceleration vector
   // (and add PI/4 because the sword is rotated 45 degrees)
   const gravity = vec(0, 0.02);
   const rotatedGravity = {
-    x: gravity.x * Math.cos(params.angle + Math.PI / 4) - gravity.y * Math.sin(params.angle + Math.PI / 4),
-    y: gravity.x * Math.sin(params.angle + Math.PI / 4) + gravity.y * Math.cos(params.angle + Math.PI / 4),
+    x:
+      gravity.x * Math.cos(params.angle + Math.PI / 4) -
+      gravity.y * Math.sin(params.angle + Math.PI / 4),
+    y:
+      gravity.x * Math.sin(params.angle + Math.PI / 4) +
+      gravity.y * Math.cos(params.angle + Math.PI / 4),
   };
   params.angularAcceleration += rotatedGravity.x + rotatedGravity.y;
-  
+
   params.angularVelocity += params.angularAcceleration;
 
   // dampen acceleration (air resistance)
@@ -95,15 +84,21 @@ function draw() {
 
     // Matrix multiplication to rotate the end of the sword
     params.streakPosition.push({
-      x: params.mousePosition.x + endOfSword.x * Math.cos(params.angle) - endOfSword.y * Math.sin(params.angle),
-      y: params.mousePosition.y + endOfSword.x * Math.sin(params.angle) + endOfSword.y * Math.cos(params.angle),
+      x:
+        params.mousePosition.x +
+        endOfSword.x * Math.cos(params.angle) -
+        endOfSword.y * Math.sin(params.angle),
+      y:
+        params.mousePosition.y +
+        endOfSword.x * Math.sin(params.angle) +
+        endOfSword.y * Math.cos(params.angle),
     });
 
     if (params.streakPosition.length > 20) {
       params.streakPosition.shift();
     }
 
-    context.strokeStyle = "gold"
+    context.strokeStyle = "gold";
     context.lineCap = "round";
     context.lineJoin = "round";
     context.shadowColor = "gold";
@@ -124,7 +119,6 @@ function draw() {
       context.moveTo(previousPosition.x, previousPosition.y);
       context.lineTo(position.x, position.y);
       context.stroke();
-
     }
   }
 
