@@ -30,6 +30,7 @@ const params = {
   color: "#FFC935"
 };
 pane.addInput(params, "color", { view: "color" });
+pane.addSeparator()
 pane.addMonitor(params, "angularAcceleration", {
   label: "Angular Acceleration",
 });
