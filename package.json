@@ -6,9 +6,12 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "parcel": "^2.8.3"
+    "parcel": "^2.8.3",
+    "tweakpane": "^3.1.4"
   },
   "devDependencies": {
-    "prettier": "2.8.3"
+    "@tweakpane/core": "^1.1.4",
+    "prettier": "2.8.3",
+    "sharp": "^0.31.1"
   }
 }

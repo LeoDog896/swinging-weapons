@@ -1,4 +1,5 @@
-import sword from "./sword.png";
+import sword from "./sword.png?width=300&height=300";
+import { Pane } from 'tweakpane';
 
 const canvas = document.querySelector<HTMLCanvasElement>("canvas")!;
 const context = canvas.getContext("2d")!;
@@ -28,52 +29,78 @@ function add(a: Vector, b: Vector): Vector {
   return { x: a.x + b.x, y: a.y + b.y };
 }
 
-const imageOffset = { x: -300, y: -15 };
-let mousePosition: Vector | null = null;
-let velocity: Vector = { x: 0, y: 0 };
-let acceleration: Vector = { x: 0, y: 0 };
-let angularVelocity = 0;
-let angle = 0;
-let streakPosition: Vector[] = [];
+function type<T>(value: T): T {
+  return value;
+}
+
+const pane = new Pane();
+const imageOffset = { x: -150, y: -15 };
+const params = {
+  mousePosition: type<Vector | null>(null),
+  velocity: { x: 0, y: 0 },
+  acceleration: { x: 0, y: 0 },
+  angularVelocity: 0,
+  angularAcceleration: 0,
+  angle: 0,
+  streakPosition: type<Vector[]>([]),
+}
+
+pane.addMonitor(params, "angularAcceleration", { label: "Angular Acceleration" });
+pane.addMonitor(params, "angularVelocity", { label: "Angular Velocity" });
+pane.addMonitor(params, "angle", { label: "Angle" });
 
 canvas.addEventListener("mousemove", (event) => {
-  mousePosition = { x: event.clientX, y: event.clientY };
+  params.mousePosition = { x: event.clientX, y: event.clientY };
 
-  acceleration.x = event.movementX;
-  acceleration.y = event.movementY;
+  params.acceleration.x = event.movementX;
+  params.acceleration.y = event.movementY;
 });
 
 function draw() {
-  velocity = add(velocity, acceleration);
+  params.velocity = add(params.velocity, params.acceleration);
 
   // air resistance
-  velocity = mul(velocity, vec(0.9));
+  params.velocity = mul(params.velocity, vec(0.9));
+  params.angularAcceleration *= 0.9;
 
-  // calculate angular velocity from the velocity vector
-  angularVelocity = (velocity.x + velocity.y) * 0.003;
+  // convert our mouse movement into angular velocity
+
+  params.angularVelocity = (params.velocity.x + params.velocity.y) / 1000;
+  
+
+  // we are applying gravity to the end of the sword, so we need to rotate the acceleration vector
+  // (and add PI/4 because the sword is rotated 45 degrees)
+  const gravity = vec(0, 0.02);
+  const rotatedGravity = {
+    x: gravity.x * Math.cos(params.angle + Math.PI / 4) - gravity.y * Math.sin(params.angle + Math.PI / 4),
+    y: gravity.x * Math.sin(params.angle + Math.PI / 4) + gravity.y * Math.cos(params.angle + Math.PI / 4),
+  };
+  params.angularAcceleration += rotatedGravity.x + rotatedGravity.y;
+  
+  params.angularVelocity += params.angularAcceleration;
 
   // dampen acceleration (air resistance)
-  acceleration = mul(acceleration, vec(0.9));
+  params.acceleration = mul(params.acceleration, vec(0.9));
 
-  angle += angularVelocity;
+  params.angle += params.angularVelocity;
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw a streak of the tip of the sword
-  if (mousePosition) {
+  if (params.mousePosition) {
     const endOfSword = {
       x: 0,
-      y: 580,
+      y: 290,
     };
 
     // Matrix multiplication to rotate the end of the sword
-    streakPosition.push({
-      x: mousePosition.x + endOfSword.x * Math.cos(angle) - endOfSword.y * Math.sin(angle),
-      y: mousePosition.y + endOfSword.x * Math.sin(angle) + endOfSword.y * Math.cos(angle),
+    params.streakPosition.push({
+      x: params.mousePosition.x + endOfSword.x * Math.cos(params.angle) - endOfSword.y * Math.sin(params.angle),
+      y: params.mousePosition.y + endOfSword.x * Math.sin(params.angle) + endOfSword.y * Math.cos(params.angle),
     });
 
-    if (streakPosition.length > 20) {
-      streakPosition.shift();
+    if (params.streakPosition.length > 20) {
+      params.streakPosition.shift();
     }
 
     context.strokeStyle = "gold"
@@ -82,17 +109,17 @@ function draw() {
     context.shadowColor = "gold";
     context.shadowBlur = 10;
 
-    for (let i = 0; i < streakPosition.length; i++) {
-      const position = streakPosition[i];
+    for (let i = 0; i < params.streakPosition.length; i++) {
+      const position = params.streakPosition[i];
 
       if (i === 0) {
         continue;
       }
 
-      const previousPosition = streakPosition[i - 1];
+      const previousPosition = params.streakPosition[i - 1];
 
       // progressively make the line thinner (this sometimes causes holes in the gaps between lines)
-      context.lineWidth = i;
+      context.lineWidth = i / 2;
       context.beginPath();
       context.moveTo(previousPosition.x, previousPosition.y);
       context.lineTo(position.x, position.y);
@@ -101,11 +128,11 @@ function draw() {
     }
   }
 
-  if (imageLoaded && mousePosition) {
+  if (imageLoaded && params.mousePosition) {
     // Offset the image so that the center of the image is at the mouse position
     context.save();
-    context.translate(mousePosition.x, mousePosition.y);
-    context.rotate(angle);
+    context.translate(params.mousePosition.x, params.mousePosition.y);
+    context.rotate(params.angle);
     context.drawImage(image, imageOffset.x, imageOffset.y);
     context.restore();
   }
