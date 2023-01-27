@@ -27,8 +27,9 @@ const params = {
   angularAcceleration: 0,
   angle: 0,
   streakPosition: type<Vector[]>([]),
+  color: "#FFC935"
 };
-
+pane.addInput(params, "color", { view: "color" });
 pane.addMonitor(params, "angularAcceleration", {
   label: "Angular Acceleration",
 });
@@ -98,10 +99,10 @@ function draw() {
       params.streakPosition.shift();
     }
 
-    context.strokeStyle = "gold";
+    context.strokeStyle = params.color;
     context.lineCap = "round";
     context.lineJoin = "round";
-    context.shadowColor = "gold";
+    context.shadowColor = params.color;
     context.shadowBlur = 10;
 
     for (let i = 0; i < params.streakPosition.length; i++) {
