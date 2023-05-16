@@ -21,8 +21,7 @@ const pane = new Pane();
 const imageOffset = { x: -150, y: -15 };
 const params = {
   mousePosition: type<Vector | null>(null),
-  velocity: { x: 0, y: 0 },
-  acceleration: { x: 0, y: 0 },
+  d: { x: 0, y: 0 },
   angularVelocity: 0,
   angularAcceleration: 0,
   angle: 0,
@@ -40,40 +39,27 @@ pane.addMonitor(params, "angle", { label: "Angle" });
 canvas.addEventListener("mousemove", (event) => {
   params.mousePosition = { x: event.clientX, y: event.clientY };
 
-  params.acceleration.x = event.movementX;
-  params.acceleration.y = event.movementY;
+  params.d.x = event.movementX;
+  params.d.y = event.movementY;
 });
 
 function draw() {
-  params.velocity = add(params.velocity, params.acceleration);
+  {
+    // handle physics
+    const { x: dx, y: dy } = params.d;
 
-  // air resistance
-  params.velocity = mul(params.velocity, vec(0.9));
-  params.angularAcceleration *= 0.9;
+    // handle movement as an "impulse" in the angular impulse-momentum thereom
+    // therefore, torque * t = I * w, solving for w, w = r * f * sin theta * t / I
+    // simplifying it, w = F * t * sin theta / m * r ( w = Ft / I )
+    const currentRotation = params.angle % (2 * Math.PI);
+    const rad = Math.atan2(dy, dx) - currentRotation;
+    console.log(Math.sign(currentRotation))
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    params.angularVelocity = (distance * Math.sin(rad)) / (100);
+    params.angularAcceleration = params.angularVelocity * 0.9;
 
-  // convert our mouse movement into angular velocity
-
-  params.angularVelocity = (params.velocity.x + params.velocity.y) / 1000;
-
-  // we are applying gravity to the end of the sword, so we need to rotate the acceleration vector
-  // (and add PI/4 because the sword is rotated 45 degrees)
-  const gravity = vec(0, 0.02);
-  const rotatedGravity = {
-    x:
-      gravity.x * Math.cos(params.angle + Math.PI / 4) -
-      gravity.y * Math.sin(params.angle + Math.PI / 4),
-    y:
-      gravity.x * Math.sin(params.angle + Math.PI / 4) +
-      gravity.y * Math.cos(params.angle + Math.PI / 4),
-  };
-  params.angularAcceleration += rotatedGravity.x + rotatedGravity.y;
-
-  params.angularVelocity += params.angularAcceleration;
-
-  // dampen acceleration (air resistance)
-  params.acceleration = mul(params.acceleration, vec(0.9));
-
-  params.angle += params.angularVelocity;
+    params.angle += params.angularVelocity;
+  }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
