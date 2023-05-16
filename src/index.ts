@@ -53,10 +53,9 @@ function draw() {
     // simplifying it, w = F * t * sin theta / m * r ( w = Ft / I )
     const currentRotation = params.angle % (2 * Math.PI);
     const rad = Math.atan2(dy, dx) - currentRotation;
-    console.log(Math.sign(currentRotation))
     const distance = Math.sqrt(dx * dx + dy * dy);
     params.angularVelocity = (distance * Math.sin(rad)) / (100);
-    params.angularAcceleration = params.angularVelocity * 0.9;
+    params.angularVelocity = params.angularVelocity * 0.9;
 
     params.angle += params.angularVelocity;
   }
